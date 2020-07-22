@@ -1,5 +1,8 @@
-use std::error::Error;
+//! # Minigrep
+//! command line tool used to search for lines in a specified file
+
 use std::fs;
+use std::io;
 
 pub mod config;
 use config::Config;
@@ -7,7 +10,7 @@ use config::Config;
 #[cfg(test)]
 mod test;
 
-pub fn run(config: &Config) -> Result<(), Box<dyn Error>> {
+pub fn run(config: &Config) -> io::Result<()> {
     let contents = fs::read_to_string(config.filename.as_str())?;
 
     let results = if config.case_sensitive {
@@ -16,34 +19,24 @@ pub fn run(config: &Config) -> Result<(), Box<dyn Error>> {
         search_case_insensitive(&config.query, &contents)
     };
 
-    for line in results {
-        println!("{}", line)
-    }
+    results.for_each(|line| println!("{}", line));
 
     Ok(())
 }
 
-pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut results = Vec::new();
-
-    for line in contents.lines() {
-        if line.contains(query) {
-            results.push(line);
-        }
-    }
-
-    results
+fn search<'a>(query: &'a str, contents: &'a str) -> Box<dyn Iterator<Item = &'a str> + 'a> {
+    Box::new(contents.lines().filter(move |line| line.contains(query)))
 }
 
-pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+fn search_case_insensitive<'a>(
+    query: &'a str,
+    contents: &'a str,
+) -> Box<dyn Iterator<Item = &'a str> + 'a> {
     let query = query.to_lowercase();
-    let mut results = Vec::new();
 
-    for line in contents.lines() {
-        if line.to_lowercase().contains(&query) {
-            results.push(line);
-        }
-    }
-
-    results
+    Box::new(
+        contents
+            .lines()
+            .filter(move |line| line.to_lowercase().contains(&query)),
+    )
 }
