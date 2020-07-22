@@ -8,7 +8,7 @@ use config::Config;
 mod test;
 
 pub fn run(config: &Config) -> Result<(), Box<dyn Error>> {
-    let contents = fs::read_to_string(config.filename)?;
+    let contents = fs::read_to_string(config.filename.as_str())?;
 
     let results = if config.case_sensitive {
         search(&config.query, &contents)
